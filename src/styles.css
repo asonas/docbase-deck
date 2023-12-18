@@ -84,8 +84,8 @@ button {
   outline: none;
 }
 
-#greet-input {
-  margin-right: 5px;
+.mb-1 {
+  margin-bottom: 1rem;
 }
 
 @media (prefers-color-scheme: dark) {
