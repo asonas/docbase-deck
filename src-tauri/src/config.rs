@@ -1,60 +1,23 @@
 extern crate directories;
 use directories::ProjectDirs;
-use serde::{Deserialize, Serialize};
+use serde::{Serialize, Deserialize};
 use std::fs::DirBuilder;
 use std::fs::File;
 use std::io::ErrorKind;
 use std::io::{Read, Write};
 
-const APP: &str = "docbase-deck";
+use log::{info, debug};
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct Config {
-    pub api_token: String,
-    pub team: String,
+const APP: &str = "docbasedeck";
+
+#[derive(Serialize, Deserialize)]
+pub struct Settings {
+  pub api_key: String,
+  pub team_name: String,
 }
 
-pub fn store(conf: Config) -> std::result::Result<bool, Box<dyn std::error::Error>> {
-  prepare();
-  if let Some(config_path) = ProjectDirs::from("", "", APP) {
-    let config = Config {
-      api_token: conf.api_token.to_string(),
-      team: conf.team.to_string(),
-    };
-    let toml = toml::to_string(&config)?;
-    let mut buf = File::create(config_path.config_dir().join("config.toml"))?;
-    buf.write(toml.as_bytes())?;
-    Ok(true)
-  } else {
-    Err("Failed to store config".into())
-  }
-}
-
-pub fn get() -> std::result::Result<Config, Box<dyn std::error::Error>> {
-  prepare();
-  if let Some(config_path) = ProjectDirs::from("", "", APP) {
-    let config_file = config_path.config_dir().join("config.toml");
-    let mut file = File::open(config_file)?;
-    let mut contents = String::new();
-    file.read_to_string(&mut contents)?;
-    let config = toml::from_str(&contents);
-    let config = match config {
-      Ok(config) => config,
-      Err(_) => {
-        dbg!("error on get conf");
-        Config {
-          api_token: "".to_string(),
-          team: "".to_string(),
-        }
-      }
-    };
-    Ok(config)
-  } else {
-    Err("Failed to get config".into())
-  }
-}
-
-fn prepare() {
+fn prepare(){
+  // TODO: save to Keychain.app
   if let Some(config_path) = ProjectDirs::from("", "", APP) {
     let filename = "config.toml";
 
@@ -77,4 +40,42 @@ fn prepare() {
       }
     };
   };
+}
+
+pub fn get() -> std::result::Result<Settings, std::io::Error> {
+  prepare();
+  debug!("getting config");
+  if let Some(config_path) = ProjectDirs::from("", "", APP) {
+    let filename = "config.toml";
+    let mut file = File::open(config_path.config_dir().join(filename))?;
+    debug!("file: {:?}", config_path.config_dir().join(filename))  ;
+    let mut contents = String::new();
+    file.read_to_string(&mut contents)?;
+    let settings: Settings = toml::from_str(&contents).unwrap();
+    debug!("settings: {:?}", settings.api_key);
+    Ok(settings)
+  } else {
+    Err(std::io::Error::new(
+      std::io::ErrorKind::NotFound,
+      "Config file not found",
+    ))
+  }
+}
+
+pub fn store(settings: Settings) -> std::result::Result<(), std::io::Error> {
+  prepare();
+
+  if let Some(config_path) = ProjectDirs::from("", "", APP) {
+    let filename = "config.toml";
+    let mut file = File::create(config_path.config_dir().join(filename))?;
+    let toml = toml::to_string(&settings).unwrap();
+    debug!("{:?}", settings.api_key);
+    file.write_all(toml.as_bytes())?;
+    Ok(())
+  } else {
+    Err(std::io::Error::new(
+      std::io::ErrorKind::NotFound,
+      "Config file not found",
+    ))
+  }
 }
