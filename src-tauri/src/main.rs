@@ -2,16 +2,17 @@
 
 use tauri::Manager;
 mod config;
+mod docbase;
 use config::Settings;
+use serde_json::{Result, Value};
+use tokio::runtime::Handle;
 
 use log::{info, debug};
 
-// Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
 #[tauri::command]
 fn greet(name: &str) -> String {
   format!("Hello, {}! You've been greeted from Rust!", name)
 }
-
 
 fn main() {
   env_logger::init();
@@ -19,7 +20,32 @@ fn main() {
     .setup(move |app| {
       let window = app.get_window("main").unwrap();
       window.open_devtools();
+      let window_1 = window.clone();
       debug!("setup...........");
+      window.listen("find-memo", move |event| match &event.payload() {
+        Some(serde) => {
+          let v: Result<Value> = serde_json::from_str(&serde);
+          if let Ok(v) = v {
+            debug!("find-memo");
+            let handle = Handle::current();
+            let (tx, rx) = std::sync::mpsc::channel();
+            std::thread::spawn(move || {
+              handle.block_on(async {
+                let conf = config::get().unwrap();
+                debug!("conf: {:?}", conf.api_key);
+                let resp = docbase::handle_docbase_request((&v).to_string(), conf).await;
+                tx.send(resp).unwrap();
+              });
+            });
+            let recv = rx.recv().unwrap();
+            let _ = window_1.emit("find-memo-callback", serde_json::to_string(&recv).unwrap());
+          }
+        }
+        // None => todo!(),
+        None => {
+            debug!("Payload for 'find-memo' event is None.");
+        },
+      });
 
       let window_2 = window.clone();
       window.listen("get-setting", move |_| {

@@ -1,6 +1,7 @@
 //import { invoke } from '@tauri-apps/api/tauri'
 import { RecoilRoot } from "recoil";
 import { Settings } from "./settings";
+import { Memo } from "./memo";
 
 export function App() {
 
@@ -8,6 +9,7 @@ export function App() {
     <RecoilRoot>
       <div>
         <Settings></Settings>
+        <Memo></Memo>
       </div>
     </RecoilRoot>
   );
