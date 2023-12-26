@@ -33,28 +33,30 @@ pub struct DocBaseResponse {
 pub struct User {
     id: i32,
     name: String,
-    screen_name: String,
     profile_image_url: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct ApiResponse {
+    posts: Vec<DocBaseResponse>,
 }
 
 fn build_docbase_search_url(request: DocBaseRequest, config: Settings) -> String {
     let mut query_params = request.tags.into_iter()
-        .map(|tag| format!("tag={}", tag.name))
+        .map(|tag| format!("tag:{}", tag.name))
         .collect::<Vec<String>>()
         .join("&");
 
-    if !query_params.is_empty() {
-        query_params.insert(0, '?');
-    }
-
     debug!("query_params: {:?}", query_params);
-    let url = format!("https://api.docbase.io/teams/{:?}/posts?q={}", config.team_name, query_params);
+    debug!("config.team_name: {}", config.team_name.to_string());
+    let url = format!("https://api.docbase.io/teams/{}/posts?q={}", config.team_name.to_string(), query_params);
     debug!("url: {:?}", url);
 
     url
 }
 
-pub async fn handle_docbase_request(message_json: String, config: Settings) -> Vec<DocBaseResponse> {
+pub async fn handle_docbase_request(config: Settings) -> Result<Vec<DocBaseResponse>, Box<dyn std::error::Error>> {
+
     let mut headers = HeaderMap::new();
     headers.insert(
         "X-DocBaseToken",
@@ -68,10 +70,8 @@ pub async fn handle_docbase_request(message_json: String, config: Settings) -> V
         "User-Agent",
         HeaderValue::from_static("DocbaseDeck from asonas/docbase-deck")
     );
+    debug!("headers: {:?}", headers);
 
-    // let client = reqwest::Client::builder()
-    //     .default_headers(headers)
-    //     .build();
     let client = reqwest::Client::new();
 
     // TODO: Search `nikki` tag by default
@@ -87,10 +87,16 @@ pub async fn handle_docbase_request(message_json: String, config: Settings) -> V
         config
     );
 
+    let res = client.get(&url).headers(headers).send().await?;
 
-    let res = client.get(url).headers(headers).send().await.unwrap();
-    let parsed = res.json::<Vec<DocBaseResponse>>().await.unwrap();
-    debug!("res: {:?}", parsed);
-    // Ok(parsed)
-    return parsed;
+    if !res.status().is_success() {
+        debug!("Error response status: {:?}", res.status());
+        return Err(Box::new(std::io::Error::new(
+            std::io::ErrorKind::Other,
+            format!("Server responded with status: {}", res.status()),
+        )));
+    }
+
+    let api_response: ApiResponse = res.json().await?;
+    Ok(api_response.posts)
 }

@@ -1,5 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use std::f32::consts::E;
+
 use tauri::Manager;
 mod config;
 mod docbase;
@@ -20,31 +22,30 @@ fn main() {
     .setup(move |app| {
       let window = app.get_window("main").unwrap();
       window.open_devtools();
-      let window_1 = window.clone();
       debug!("setup...........");
-      window.listen("find-memo", move |event| match &event.payload() {
-        Some(serde) => {
-          let v: Result<Value> = serde_json::from_str(&serde);
-          if let Ok(v) = v {
-            debug!("find-memo");
-            let handle = Handle::current();
-            let (tx, rx) = std::sync::mpsc::channel();
-            std::thread::spawn(move || {
-              handle.block_on(async {
-                let conf = config::get().unwrap();
-                debug!("conf: {:?}", conf.api_key);
-                let resp = docbase::handle_docbase_request((&v).to_string(), conf).await;
+
+      let window_1 = window.clone();
+      window.listen("find-memo", move |_| {
+        debug!("find-memo");
+        let handle = Handle::current();
+        let (tx, rx) = std::sync::mpsc::channel();
+        std::thread::spawn(move || {
+          handle.block_on(async {
+            let config = config::get().unwrap();
+            match docbase::handle_docbase_request(config).await {
+              Ok(resp) => {
+                let resp = serde_json::to_string(&resp).expect("JSON serialization error");
                 tx.send(resp).unwrap();
-              });
-            });
-            let recv = rx.recv().unwrap();
-            let _ = window_1.emit("find-memo-callback", serde_json::to_string(&recv).unwrap());
-          }
-        }
-        // None => todo!(),
-        None => {
-            debug!("Payload for 'find-memo' event is None.");
-        },
+              },
+              Err(e) => {
+                debug!("Error: {:?}", e);
+              }
+            }
+          });
+        });
+        let recv = rx.recv().unwrap();
+        let _ = window_1.emit("find-memo-callback", &recv);
+
       });
 
       let window_2 = window.clone();
