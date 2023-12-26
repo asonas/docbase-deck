@@ -29,10 +29,9 @@ export function Memo() {
 
   useEffect(() => {
     if (memos.length === 0) {
-      emit("find-memo");
+      emit("find-memo", { name: selectedTag });
     }
   })
-  const markdown = '# Hi, *Pluto*!'
 
   useEffect(() => {
     const unlisten = once(
@@ -40,7 +39,7 @@ export function Memo() {
       (event: { event: string; payload: string }) => {
         const payload = JSON.parse(event.payload);
         console.log(payload);
-        setMemos([ ...memos, ...payload ]);
+        setMemos([ ...payload ]);
       }
     );
     return () => {
@@ -51,9 +50,14 @@ export function Memo() {
 
   useEffect(() => {
     console.log("hennkousaretayo");
+    console.log(selectTag)
+    console.log({name: selectedTag})
+    console.log(JSON.stringify(selectedTag))
+    emit("find-memo", { name: selectedTag })
   }, [selectedTag]);
 
   const selectTag = (event) => {
+    console.log(event.currentTarget.innerText);
     setSelectedTag(event.currentTarget.innerText);
   }
   const navItems = [

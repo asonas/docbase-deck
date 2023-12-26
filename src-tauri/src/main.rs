@@ -18,27 +18,36 @@ fn main() {
       debug!("setup...........");
 
       let window_1 = window.clone();
-      window.listen("find-memo", move |_| {
-        debug!("find-memo");
-        let handle = Handle::current();
-        let (tx, rx) = std::sync::mpsc::channel();
-        std::thread::spawn(move || {
-          handle.block_on(async {
-            let config = config::get().unwrap();
-            match docbase::handle_docbase_request(config).await {
-              Ok(resp) => {
-                let resp = serde_json::to_string(&resp).expect("JSON serialization error");
-                tx.send(resp).unwrap();
-              },
-              Err(e) => {
-                debug!("Error: {:?}", e);
-              }
-            }
-          });
-        });
-        let recv = rx.recv().unwrap();
-        let _ = window_1.emit("find-memo-callback", &recv);
+      window.listen("find-memo", move |event| match &event.payload() {
+        Some(s) => {
+          // let v: Result<Value> = serde_json::from_str(&s);
+          let v: Result<Value> = serde_json::from_str(&s);
 
+          if let Ok(v)= v {
+            debug!("find-memo");
+            debug!("v: {}", v);
+            let handle = Handle::current();
+            let (tx, rx) = std::sync::mpsc::channel();
+            std::thread::spawn(move || {
+              handle.block_on(async {
+                let config = config::get().unwrap();
+                match docbase::handle_docbase_request(v.to_string(), config).await {
+                  Ok(resp) => {
+                    let resp = serde_json::to_string(&resp).expect("JSON serialization error");
+                    tx.send(resp).unwrap();
+                  },
+                  Err(e) => {
+                    debug!("Error: {:?}", e);
+                  }
+                }
+              });
+            });
+            let recv = rx.recv().unwrap();
+            let _ = window_1.emit("find-memo-callback", &recv);
+
+          }
+        }
+        None => todo!(),
       });
 
       let window_2 = window.clone();

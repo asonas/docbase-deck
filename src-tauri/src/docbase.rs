@@ -1,6 +1,7 @@
 use reqwest;
 use reqwest::header::{HeaderMap, HeaderValue, CONTENT_TYPE};
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use log::debug;
 use crate::config::Settings;
 
@@ -55,8 +56,7 @@ fn build_docbase_search_url(request: DocBaseRequest, config: Settings) -> String
     url
 }
 
-pub async fn handle_docbase_request(config: Settings) -> Result<Vec<DocBaseResponse>, Box<dyn std::error::Error>> {
-
+pub async fn handle_docbase_request(message_json: String, config: Settings) -> Result<Vec<DocBaseResponse>, Box<dyn std::error::Error>> {
     let mut headers = HeaderMap::new();
     headers.insert(
         "X-DocBaseToken",
@@ -72,6 +72,9 @@ pub async fn handle_docbase_request(config: Settings) -> Result<Vec<DocBaseRespo
     );
     debug!("headers: {:?}", headers);
 
+    let tag = serde_json::from_str::<Tag>(&message_json).unwrap();
+    debug!("tag: {}", tag.name);
+
     let client = reqwest::Client::new();
 
     // TODO: Search `nikki` tag by default
@@ -82,7 +85,7 @@ pub async fn handle_docbase_request(config: Settings) -> Result<Vec<DocBaseRespo
     // );
     let url = build_docbase_search_url(
         DocBaseRequest {
-            tags: vec!(Tag { name: "nikki".to_string()} )
+            tags: vec!(tag)
         },
         config
     );
@@ -99,4 +102,14 @@ pub async fn handle_docbase_request(config: Settings) -> Result<Vec<DocBaseRespo
 
     let api_response: ApiResponse = res.json().await?;
     Ok(api_response.posts)
+}
+
+pub fn parse(json: String) -> Result<Tag, serde_json::Error> {
+    match serde_json::from_str(&json) {
+        Ok(tag) => Ok(tag),
+        Err(e) => {
+            log::error!("Failed to parse JSON: {}", e);
+            Err(e)
+        },
+    }
 }
