@@ -71,6 +71,17 @@ export function Memo() {
       title: 'frappe',
       isSelected: selectedTag === 'frappe',
     },
+    {
+      id: 'dev',
+      title: 'dev',
+      isSelected: selectedTag === 'dev',
+    },
+    {
+      id: 'チームトポロジー',
+      title: 'チームトポロジー',
+      isSelected: selectedTag === 'チームトポロジー',
+    },
+
   ]
 
   // UI
@@ -78,21 +89,28 @@ export function Memo() {
 
   return (
     <ThemeProvider theme={theme}>
-      <div className="grid grid-cols-1 md:grid-cols-12">
-        <div className="md:col-span-3 p-1">
+      <div className="flex flex-wrap -mx-2">
+        <div className="w-1/4 p-2 bg-gray-100 overflow-auto inset-y-0 left-0">
           <input type="text" className="mt-1 mb-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"></input>
           <Section>
             <SideNav items={navItems} onClick={selectTag} />
           </Section>
         </div>
-        <div className="md:col-span-9 p-2">
+        <div className="w-3/4 px-2 mt-3 duration-300 overflow-auto">
           {memos && memos.map((memo, index) => (
             <div key={index}>
               <h3>{memo.title}</h3>
               {memo.id}
-              {/* <p>{memo.body}</p> */}
+              {memo.tags.map((tag, index) => (
+                <span
+                  key={index}
+                  className="inline-block bg-gray-200 rounded-full px-3 py-1 text-sm font-semibold text-gray-700 mr-2">
+                  {tag.name}
+                </span>
+              ))}
             </div>
           ))}
+
         </div>
       </div>
     </ThemeProvider>
