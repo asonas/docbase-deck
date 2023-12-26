@@ -46,11 +46,14 @@ export function Memo() {
 
   return (
     <div>
-      Memo
+
+      <h1 class="text-  mt-3 font-clor underline">
+        memo
+      </h1>
+
       <span>{memos.length}</span>
       {memos && memos.map((memo, index) => (
         <div key={index}>
-          <p>aaa</p>
           <h3>{memo.title}</h3>
           {/* <p>{memo.body}</p> */}
         </div>

@@ -1,4 +1,4 @@
-//import { invoke } from '@tauri-apps/api/tauri'
+import "tailwindcss/tailwind.css";
 import { RecoilRoot } from "recoil";
 import { Settings } from "./settings";
 import { Memo } from "./memo";
