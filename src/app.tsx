@@ -4,7 +4,6 @@ import { Settings } from "./settings";
 import { Memo } from "./memo";
 
 export function App() {
-
   return (
     <RecoilRoot>
       <div>

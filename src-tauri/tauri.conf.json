@@ -37,9 +37,7 @@
       {
         "fullscreen": false,
         "resizable": true,
-        "title": "docbase-deck",
-        "width": 1200,
-        "height": 1000
+        "title": "docbase-deck"
       }
     ]
   }

@@ -1,7 +1,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use std::f32::consts::E;
-
 use tauri::Manager;
 mod config;
 mod docbase;
@@ -10,11 +8,6 @@ use serde_json::{Result, Value};
 use tokio::runtime::Handle;
 
 use log::{info, debug};
-
-#[tauri::command]
-fn greet(name: &str) -> String {
-  format!("Hello, {}! You've been greeted from Rust!", name)
-}
 
 fn main() {
   env_logger::init();
@@ -67,10 +60,8 @@ fn main() {
       });
       Ok(())
     })
-    .invoke_handler(tauri::generate_handler![
-      greet,
-
-    ])
+    .invoke_handler(tauri::generate_handler![])
+    .plugin(tauri_plugin_window_state::Builder::default().build())
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
 }
