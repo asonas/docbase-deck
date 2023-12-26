@@ -8,7 +8,7 @@ export function App() {
   return (
     <RecoilRoot>
       <div>
-        <Settings></Settings>
+        {/* <Settings></Settings> */}
         <Memo></Memo>
       </div>
     </RecoilRoot>
