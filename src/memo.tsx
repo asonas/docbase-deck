@@ -4,7 +4,8 @@ import { useEffect, useState, useRef } from "preact/hooks";
 import { createTheme, ThemeProvider, Section, SideNav } from 'smarthr-ui'
 import 'smarthr-ui/smarthr-ui.css'
 import { open } from '@tauri-apps/api/shell';
-
+import DOMPurify from 'dompurify';
+import { marked } from 'marked';
 
 export const memoState = atom({
   key: "memoState",
@@ -53,6 +54,13 @@ export function Memo() {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [selectedTagIndex, setSelectedTagIndex] = useState(navItems.findIndex(item => item.id === selectedTag));
   const memoRefs = useRef([]);
+
+  const markdownToHtml = (markdown) => {
+    if (!markdown) return '';
+    const rawMarkup = marked(markdown, { breaks: true });
+    return DOMPurify.sanitize(rawMarkup);
+    // return rawMarkup;
+  };
 
   useEffect(() => {
     if (memos.length === 0) {
@@ -215,8 +223,8 @@ export function Memo() {
                 <img src={memos[selectedIndex].user.profile_image_url} alt="User" className="w-8 h-8 rounded-full mr-2" />
                 <div className="text-sm font-semibold">{memos[selectedIndex].user.name}</div>
               </div>
-              <div className="mt-4 text-gray-800 text-sm">
-                {memos[selectedIndex].body}
+              <div className="prose mt-4 text-gray-800 text-sm"
+                dangerouslySetInnerHTML={{ __html: markdownToHtml(memos[selectedIndex].body) }}>
               </div>
             </div>
           )}
