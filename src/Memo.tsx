@@ -47,7 +47,6 @@ export function Memo() {
   const TAGS_FILE_NAME = 'tags.json';
   const saveTagsToFile = async (tags) => {
     const path = await appDataDir();
-      console.log(path);
     const fullPath = `${path}${TAGS_FILE_NAME}`;
     await writeFile({ path: fullPath, contents: JSON.stringify(tags) });
   };
@@ -55,7 +54,6 @@ export function Memo() {
   const loadTagsFromFile = async () => {
     try {
       const path = await appDataDir();
-      console.log(path);
       const fullPath = `${path}${TAGS_FILE_NAME}`;
       const tagsJson = await readTextFile(fullPath);
       const tags = JSON.parse(tagsJson);
