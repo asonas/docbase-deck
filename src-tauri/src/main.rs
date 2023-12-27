@@ -14,7 +14,11 @@ fn main() {
   tauri::Builder::default()
     .setup(move |app| {
       let window = app.get_window("main").unwrap();
-      window.open_devtools();
+      let env = std::env::var("TAURI_ENV").unwrap_or_default();
+      if env == "dev" {
+        window.open_devtools();
+      }
+
       debug!("setup...........");
 
       let window_1 = window.clone();
