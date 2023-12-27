@@ -149,14 +149,14 @@ export function Memo() {
             event.preventDefault();
             newTagIndex = Math.max(selectedTagIndex - 1, 0);
             setSelectedTagIndex(newTagIndex);
-            setSelectedTag(navItems[newTagIndex].id);
+            handleSelectTag(navItems[newTagIndex].id);;
             setSelectedIndex(0);
             break;
           case 'n':
             event.preventDefault();
             newTagIndex = Math.min(selectedTagIndex + 1, navItems.length - 1);
             setSelectedTagIndex(newTagIndex);
-            setSelectedTag(navItems[newTagIndex].id);
+            handleSelectTag(navItems[newTagIndex].id);
             setSelectedIndex(0);
             break;
         }
