@@ -1,12 +1,13 @@
 import { once, emit } from "@tauri-apps/api/event";
-import { atom, useRecoilState } from "recoil";
-import { useEffect, useState, useRef } from "preact/hooks";
-import { createTheme, ThemeProvider } from 'smarthr-ui'
-import { open } from '@tauri-apps/api/shell';
-import DOMPurify from 'dompurify';
-import { marked } from 'marked';
 import { readTextFile, writeFile } from '@tauri-apps/api/fs';
 import { appDataDir } from '@tauri-apps/api/path';
+import { open } from '@tauri-apps/api/shell';
+
+import { MouseEvent } from "react";
+import { atom, useRecoilState } from "recoil";
+import { useEffect, useState, useRef } from "preact/hooks";
+import DOMPurify from 'dompurify';
+import { marked } from 'marked';
 
 type Tag = {
   id: string;
@@ -48,20 +49,17 @@ export const memosState = atom<Memo[]>({
 });
 
 export function Memo() {
-  const [selectedTag, setSelectedTag] = useState('dev');
   const initialTags = [
     { id: 'dev', title: 'dev', isSelected: true },
     { id: 'nikki', title: 'nikki', isSelected: false },
     { id: 'frappe', title: 'frappe', isSelected: false },
     { id: 'チームトポロジー', title: 'チームトポロジー', isSelected: false }
   ];
+  const [selectedTag, setSelectedTag] = useState('dev');
   const [navItems, setNavItems] = useState<Tag[]>(initialTags);
   const [newTagTitle, setNewTagTitle] = useState<string>('');
-
   const [isLoading, setIsLoading] = useState(false);
-
   const [memos, setMemos] = useRecoilState(memosState);
-
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [selectedTagIndex, setSelectedTagIndex] = useState(navItems.findIndex(item => item.id === selectedTag));
   const memoRefs = useRef<HTMLDivElement[]>([]);
@@ -100,7 +98,8 @@ export function Memo() {
   useEffect(() => {
     loadTagsFromFile();
   }, []);
-  const markdownToHtml = (markdown) => {
+
+  const markdownToHtml = (markdown: string): string => {
     if (!markdown) return '';
     const rawMarkup = marked(markdown, { breaks: true });
     return DOMPurify.sanitize(rawMarkup);
@@ -121,7 +120,7 @@ export function Memo() {
     })));
   };
 
-  const handleAddTag = async (newItemTitle) => {
+  const handleAddTag = async (newItemTitle: string) => {
     const newItem = {
       id: newItemTitle.toLowerCase(),
       title: newItemTitle,
@@ -147,18 +146,18 @@ export function Memo() {
         setIsLoading(true)
         const payload: Memo[] = JSON.parse(event.payload);
 
-        console.log(payload);
+        console.debug(payload);
         setMemos([ ...payload ]);
         setIsLoading(false)
       }
     );
     return () => {
-      console.log("unlisten find-memo-callback");
+      console.info("unlisten find-memo-callback");
       unlisten.then((unlisten) => unlisten());
     };
   }, [memos]);
 
-  const scrollToMemo = (index) => {
+  const scrollToMemo = (index: number) => {
     const selectedMemo = memoRefs.current[index];
     if (selectedMemo) {
       selectedMemo.scrollIntoView({
@@ -169,9 +168,6 @@ export function Memo() {
   };
 
   useEffect(() => {
-    console.log(selectTag)
-    console.log({name: selectedTag})
-    console.log(JSON.stringify(selectedTag))
     emit("find-memo", { name: selectedTag })
   }, [selectedTag]);
 
@@ -230,16 +226,13 @@ export function Memo() {
     }
   };
 
-  const selectTag = (event) => {
+  const selectTag = (event: MouseEvent<HTMLButtonElement>): void => {
     console.log(event.currentTarget.innerText);
     setSelectedTag(event.currentTarget.innerText);
   }
 
-  // UI
-  const theme = createTheme();
-
   return (
-    <ThemeProvider theme={theme}>
+    <div>
       <div className="flex mx-2">
         <div className="sticky top-1 w-/6 p-2 bg-gray-100 h-screen">
           <div className="flex flex-wrap -mx-3 mb-3">
@@ -258,7 +251,7 @@ export function Memo() {
               />
             </div>
           </div>
-          {navItems.map((item, index) => (
+          {navItems.map((item) => (
             <button
               key={item.id}
               onClick={() => handleSelectTag(item.id)}
@@ -334,6 +327,6 @@ export function Memo() {
 
         </div>
       </div>
-    </ThemeProvider>
+    </div>
   );
 }
