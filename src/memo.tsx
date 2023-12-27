@@ -1,6 +1,6 @@
 import { once, emit } from "@tauri-apps/api/event";
 import { atom, useRecoilState } from "recoil";
-import { useEffect, useState } from "preact/hooks";
+import { useEffect, useState, useRef } from "preact/hooks";
 import { createTheme, ThemeProvider, Section, SideNav } from 'smarthr-ui'
 import 'smarthr-ui/smarthr-ui.css'
 import { open } from '@tauri-apps/api/shell';
@@ -25,7 +25,7 @@ export const memosState = atom({
 export function Memo() {
   // const [memo, setMemo] = useRecoilState(memoState);
   const [memos, setMemos] = useRecoilState(memosState);
-  const [selectedTag, setSelectedTag] = useState('nikki');
+  const [selectedTag, setSelectedTag] = useState('dev');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const memoRefs = useRef([]);
 
@@ -72,12 +72,12 @@ export function Memo() {
     const handleKeyPress = (event) => {
       let newIndex;
       switch (event.key) {
-        case 'j':
+        case 'k':
           newIndex = Math.max(selectedIndex - 1, 0);
           setSelectedIndex(newIndex);
           scrollToMemo(newIndex);
           break;
-        case 'k':
+        case 'j':
           newIndex = Math.min(selectedIndex + 1, memos.length - 1);
           setSelectedIndex(newIndex);
           scrollToMemo(newIndex);
@@ -96,6 +96,7 @@ export function Memo() {
       window.removeEventListener('keydown', handleKeyPress);
     };
   }, [memos, selectedIndex]);
+
   const handleOpenLink = async () => {
     if (memos && memos.length > 0) {
       await open(memos[selectedIndex].url);
