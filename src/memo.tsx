@@ -27,6 +27,7 @@ export function Memo() {
   const [memos, setMemos] = useRecoilState(memosState);
   const [selectedTag, setSelectedTag] = useState('nikki');
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const memoRefs = useRef([]);
 
 
   useEffect(() => {
@@ -50,16 +51,55 @@ export function Memo() {
     };
   }, [memos]);
 
+  const scrollToMemo = (index) => {
+    const selectedMemo = memoRefs.current[index];
+    if (selectedMemo) {
+      selectedMemo.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+      });
+    }
+  };
+
   useEffect(() => {
-    console.log("hennkousaretayo");
     console.log(selectTag)
     console.log({name: selectedTag})
     console.log(JSON.stringify(selectedTag))
     emit("find-memo", { name: selectedTag })
   }, [selectedTag]);
 
-  const handleOpenLink = async (url) => {
-    await open(url);
+  useEffect(() => {
+    const handleKeyPress = (event) => {
+      let newIndex;
+      switch (event.key) {
+        case 'j':
+          newIndex = Math.max(selectedIndex - 1, 0);
+          setSelectedIndex(newIndex);
+          scrollToMemo(newIndex);
+          break;
+        case 'k':
+          newIndex = Math.min(selectedIndex + 1, memos.length - 1);
+          setSelectedIndex(newIndex);
+          scrollToMemo(newIndex);
+          break;
+        case ';':
+          handleOpenLink();
+          break;
+        default:
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyPress);
+    };
+  }, [memos, selectedIndex]);
+  const handleOpenLink = async () => {
+    if (memos && memos.length > 0) {
+      await open(memos[selectedIndex].url);
+    }
   };
 
   const selectTag = (event) => {
@@ -89,12 +129,11 @@ export function Memo() {
     },
   ]
 
-
-
   // UI
   const theme = createTheme();
 
-  return (    <ThemeProvider theme={theme}>
+  return (
+    <ThemeProvider theme={theme}>
       <div className="flex flex-wrap -mx-2">
         <div className="sticky top-1 w-1/4 p-2 bg-gray-100">
           <input type="text" className="mt-1 mb-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"></input>
@@ -104,7 +143,13 @@ export function Memo() {
         </div>
         <div className="w-3/4 px-2 mt-3 duration-300 overflow-auto">
           {memos && memos.map((memo, index) => (
-            <div key={index} className="p-4 mb-8 bg-white rounded-lg shadow-md" onClick={() => handleOpenLink(memo.url)}>
+            <div key={index}
+                 ref={(el) => memoRefs.current[index] = el}
+                 className={`p-4 mb-8 bg-white rounded-lg shadow-md border-4 ${index === selectedIndex ? 'border-blue-500' : 'border-transparent'}`} // 選択されているメモに枠線色を設定
+                 onClick={() => {
+                   setSelectedIndex(index);
+                   scrollToMemo(index);
+                 }}>
               <h3 className="mb-2 text-xl font-semibold text-gray-800">{memo.title}</h3>
               <div className="mb-4">
                 {memo.tags.map((tag, index) => (
