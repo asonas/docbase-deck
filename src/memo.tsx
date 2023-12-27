@@ -29,7 +29,7 @@ export const memosState = atom({
 export function Memo() {
   const [selectedTag, setSelectedTag] = useState('dev');
   const initialTags = [
-    { id: 'dev', title: 'dev', isSelected: false },
+    { id: 'dev', title: 'dev', isSelected: true },
     { id: 'nikki', title: 'nikki', isSelected: false },
     { id: 'frappe', title: 'frappe', isSelected: false },
     { id: 'チームトポロジー', title: 'チームトポロジー', isSelected: false }
@@ -61,7 +61,15 @@ export function Memo() {
       const tags = JSON.parse(tagsJson);
       setNavItems(tags);
     } catch (error) {
-      console.error('Failed to load tags:', error);
+      if (error.code === 'NotFound') {
+        console.log('tags.json not found. Saving initial tags.');
+        setNavItems(initialTags);
+        saveTagsToFile(initialTags).catch((saveError) =>
+          console.error('Failed to save initial tags:', saveError)
+        );
+      } else {
+        console.error('Failed to load tags:', error);
+      }
     }
   };
 
