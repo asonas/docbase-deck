@@ -9,6 +9,8 @@ import { useEffect, useState, useRef } from "preact/hooks";
 import DOMPurify from 'dompurify';
 import { marked } from 'marked';
 
+import { modalState } from "./settings";
+
 type Tag = {
   id: string;
   title: string;
@@ -63,12 +65,17 @@ export function Memo() {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [selectedTagIndex, setSelectedTagIndex] = useState(navItems.findIndex(item => item.id === selectedTag));
   const memoRefs = useRef<HTMLDivElement[]>([]);
+  const [isModalOpen, setIsModalOpen] = useRecoilState(modalState);
 
   const TAGS_FILE_NAME = 'tags.json';
   const saveTagsToFile = async (tags) => {
     const path = await appDataDir();
     const fullPath = `${path}${TAGS_FILE_NAME}`;
     await writeFile({ path: fullPath, contents: JSON.stringify(tags) });
+  };
+
+  const openSettingsModal = () => {
+    setIsModalOpen(true);
   };
 
   const loadTagsFromFile = async () => {
@@ -262,6 +269,7 @@ export function Memo() {
               {item.title}
             </button>
           ))}
+          <button onClick={openSettingsModal}>Settings</button>
         </div>
         <div className="w-2/6 px-2 mt-3 duration-300 overflow-auto h-screen">
           {isLoading && (

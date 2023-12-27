@@ -4,10 +4,43 @@ use tauri::Manager;
 mod config;
 mod docbase;
 use config::Settings;
-use serde_json::{Result, Value};
+use serde::{Deserialize, Serialize};
+use serde_json::{Result, Value, json};
 use tokio::runtime::Handle;
 
 use log::{info, debug};
+
+#[derive(Serialize, Deserialize)]
+struct DocbaseApiArgs {
+  api_key: String,
+  team_name: String,
+}
+
+
+#[tauri::command]
+async fn call_docbase_api(args: DocbaseApiArgs) -> std::result::Result<String, String> {
+  let client = reqwest::Client::new();
+  let url = format!("https://api.docbase.io/teams/{}/posts?per_page=1", args.team_name);
+
+  let response = client
+    .get(url)
+    .header("X-DocBaseToken", args.api_key)
+    .header("Content-Type", "application/json")
+    .send()
+    .await;
+
+  match response {
+    Ok(resp) => {
+      if resp.status() == reqwest::StatusCode::OK {
+        Ok(json!({"status": 200, "message": "Success"}).to_string())
+      } else {
+        Err(format!("Failed with status {}", resp.status()))
+      }
+    }
+    Err(e) => Err(format!("Failed to send request: {}", e)),
+  }
+}
+
 
 fn main() {
   env_logger::init();
@@ -73,7 +106,7 @@ fn main() {
       });
       Ok(())
     })
-    .invoke_handler(tauri::generate_handler![])
+    .invoke_handler(tauri::generate_handler![call_docbase_api])
     .plugin(tauri_plugin_window_state::Builder::default().build())
     .run(tauri::generate_context!())
     .expect("error while running tauri application");

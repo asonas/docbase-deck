@@ -7,7 +7,7 @@ export function App() {
   return (
     <RecoilRoot>
       <div className="bg-gray-100 h-full">
-        {/* <Settings></Settings> */}
+        <Settings></Settings>
         <Memo></Memo>
       </div>
     </RecoilRoot>
