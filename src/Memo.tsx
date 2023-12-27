@@ -1,27 +1,48 @@
 import { once, emit } from "@tauri-apps/api/event";
 import { atom, useRecoilState } from "recoil";
 import { useEffect, useState, useRef } from "preact/hooks";
-import { createTheme, ThemeProvider, Section, SideNav } from 'smarthr-ui'
-import 'smarthr-ui/smarthr-ui.css'
+import { createTheme, ThemeProvider } from 'smarthr-ui'
 import { open } from '@tauri-apps/api/shell';
 import DOMPurify from 'dompurify';
 import { marked } from 'marked';
-import { Tag } from "./Tag";
 import { readTextFile, writeFile } from '@tauri-apps/api/fs';
 import { appDataDir } from '@tauri-apps/api/path';
 
-export const memoState = atom({
+type Tag = {
+  id: string;
+  title: string;
+  isSelected: boolean;
+};
+
+type Memo = {
+  id: string;
+  title: string;
+  body: string;
+  tags: Tag[];
+  created_at: string;
+  url?: string;
+  user: User
+};
+
+type User = {
+  profile_image_url: string;
+  name: string;
+};
+
+export const memoState = atom<Memo>({
   key: "memoState",
   default: {
-    memo: "",
     id: "",
     title: "",
     body: "",
-    tags: "",
+    created_at: "",
+    url: "",
+    tags: [],
+    user: { profile_image_url: "", name: "" },
   },
 });
 
-export const memosState = atom({
+export const memosState = atom<Memo[]>({
   key: "memosState",
   default: [],
 });
@@ -34,15 +55,16 @@ export function Memo() {
     { id: 'frappe', title: 'frappe', isSelected: false },
     { id: 'チームトポロジー', title: 'チームトポロジー', isSelected: false }
   ];
-  const [navItems, setNavItems] = useState(initialTags);
-  const [newTagTitle, setNewTagTitle] = useState('');
+  const [navItems, setNavItems] = useState<Tag[]>(initialTags);
+  const [newTagTitle, setNewTagTitle] = useState<string>('');
 
+  const [isLoading, setIsLoading] = useState(false);
 
   const [memos, setMemos] = useRecoilState(memosState);
 
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [selectedTagIndex, setSelectedTagIndex] = useState(navItems.findIndex(item => item.id === selectedTag));
-  const memoRefs = useRef([]);
+  const memoRefs = useRef<HTMLDivElement[]>([]);
 
   const TAGS_FILE_NAME = 'tags.json';
   const saveTagsToFile = async (tags) => {
@@ -52,6 +74,8 @@ export function Memo() {
   };
 
   const loadTagsFromFile = async () => {
+    setIsLoading(true);
+
     try {
       const path = await appDataDir();
       const fullPath = `${path}${TAGS_FILE_NAME}`;
@@ -68,6 +92,8 @@ export function Memo() {
       } else {
         console.error('Failed to load tags:', error);
       }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -118,9 +144,12 @@ export function Memo() {
     const unlisten = once(
       "find-memo-callback",
       (event: { event: string; payload: string }) => {
-        const payload = JSON.parse(event.payload);
+        setIsLoading(true)
+        const payload: Memo[] = JSON.parse(event.payload);
+
         console.log(payload);
         setMemos([ ...payload ]);
+        setIsLoading(false)
       }
     );
     return () => {
@@ -147,7 +176,7 @@ export function Memo() {
   }, [selectedTag]);
 
   useEffect(() => {
-    const handleKeyPress = (event) => {
+    const handleKeyPress = (event: KeyboardEvent) => {
       if (event.ctrlKey) {
         let newTagIndex;
         switch (event.key) {
@@ -242,7 +271,12 @@ export function Memo() {
           ))}
         </div>
         <div className="w-2/6 px-2 mt-3 duration-300 overflow-auto h-screen">
-          {memos && memos.map((memo, index) => (
+          {isLoading && (
+            <div className="flex justify-center items-center h-full">
+              <div>Loading...</div>
+            </div>
+          )}
+          {!isLoading && memos && memos.map((memo, index) => (
             <div key={index}
                  ref={(el) => memoRefs.current[index] = el}
                  className={`p-4 mb-8 bg-white rounded-lg shadow-md border-4 ${index === selectedIndex ? 'border-blue-500' : 'border-transparent'}`} // 選択されているメモに枠線色を設定
