@@ -6,6 +6,9 @@ import 'smarthr-ui/smarthr-ui.css'
 import { open } from '@tauri-apps/api/shell';
 import DOMPurify from 'dompurify';
 import { marked } from 'marked';
+import { Tag } from "./Tag";
+import { readTextFile, writeFile } from '@tauri-apps/api/fs';
+import { appDataDir } from '@tauri-apps/api/path';
 
 export const memoState = atom({
   key: "memoState",
@@ -25,29 +28,15 @@ export const memosState = atom({
 
 export function Memo() {
   const [selectedTag, setSelectedTag] = useState('dev');
+  const initialTags = [
+    { id: 'dev', title: 'dev', isSelected: false },
+    { id: 'nikki', title: 'nikki', isSelected: false },
+    { id: 'frappe', title: 'frappe', isSelected: false },
+    { id: 'チームトポロジー', title: 'チームトポロジー', isSelected: false }
+  ];
+  const [navItems, setNavItems] = useState(initialTags);
+  const [newTagTitle, setNewTagTitle] = useState('');
 
-  const navItems = [
-    {
-      id: 'dev',
-      title: 'dev',
-      isSelected: selectedTag === 'dev',
-    },
-    {
-      id: 'nikki',
-      title: 'nikki',
-      isSelected: selectedTag === 'nikki',
-    },
-    {
-      id: 'frappe',
-      title: 'frappe',
-      isSelected: selectedTag === 'frappe',
-    },
-    {
-      id: 'チームトポロジー',
-      title: 'チームトポロジー',
-      isSelected: selectedTag === 'チームトポロジー',
-    },
-  ]
 
   const [memos, setMemos] = useRecoilState(memosState);
 
@@ -55,11 +44,62 @@ export function Memo() {
   const [selectedTagIndex, setSelectedTagIndex] = useState(navItems.findIndex(item => item.id === selectedTag));
   const memoRefs = useRef([]);
 
+  const TAGS_FILE_NAME = 'tags.json';
+  const saveTagsToFile = async (tags) => {
+    const path = await appDataDir();
+      console.log(path);
+    const fullPath = `${path}${TAGS_FILE_NAME}`;
+    await writeFile({ path: fullPath, contents: JSON.stringify(tags) });
+  };
+
+  const loadTagsFromFile = async () => {
+    try {
+      const path = await appDataDir();
+      console.log(path);
+      const fullPath = `${path}${TAGS_FILE_NAME}`;
+      const tagsJson = await readTextFile(fullPath);
+      const tags = JSON.parse(tagsJson);
+      setNavItems(tags);
+    } catch (error) {
+      console.error('Failed to load tags:', error);
+    }
+  };
+
+  useEffect(() => {
+    loadTagsFromFile();
+  }, []);
   const markdownToHtml = (markdown) => {
     if (!markdown) return '';
     const rawMarkup = marked(markdown, { breaks: true });
     return DOMPurify.sanitize(rawMarkup);
-    // return rawMarkup;
+  };
+
+  const handleAddTagClick = () => {
+    if (newTagTitle.trim() !== '') {
+      handleAddTag(newTagTitle.trim());
+      setNewTagTitle('');
+    }
+  };
+
+  const handleSelectTag = (id) => {
+    setSelectedTag(id);
+    setNavItems(navItems.map(item => ({
+      ...item,
+      isSelected: item.id === id
+    })));
+  };
+
+  const handleAddTag = async (newItemTitle) => {
+    const newItem = {
+      id: newItemTitle.toLowerCase(),
+      title: newItemTitle,
+      isSelected: false
+    };
+    if (!navItems.some(item => item.id === newItem.id)) {
+      const newNavItems = [...navItems, newItem];
+      setNavItems(newNavItems);
+      await saveTagsToFile(newNavItems);
+    }
   };
 
   useEffect(() => {
@@ -166,8 +206,24 @@ export function Memo() {
   return (
     <ThemeProvider theme={theme}>
       <div className="flex mx-2">
-        <div className="sticky top-1 w-1/6 p-2 bg-gray-100 h-screen">
-          <input type="text" className="sticky top-0 mt-1 mb-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"></input>
+        <div className="sticky top-1 w-/6 p-2 bg-gray-100 h-screen">
+          <div className="flex flex-wrap -mx-3 mb-6">
+            <div className="w-full md:w-3/5 px-1">
+              <input
+                type="text"
+                placeholder="Add new tag"
+                value={newTagTitle}
+                onChange={(e) => setNewTagTitle(e.target.value)}
+                className="appearance-none block w-full bg-gray-200 text-gray-700 border border-red-500 rounded py-3 px-4 mb-3 leading-tight focus:outline-none focus:bg-white"
+              />
+            </div>
+            <div className="w-full md:w-2/5 px-1">
+              <button
+                onClick={handleAddTagClick}
+                className="mb-2 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+              >Add</button>
+            </div>
+          </div>
           <Section>
             <SideNav items={navItems} onClick={selectTag} />
           </Section>
