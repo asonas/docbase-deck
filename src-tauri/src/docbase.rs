@@ -50,7 +50,7 @@ fn build_docbase_search_url(request: DocBaseRequest, config: Settings) -> String
 
     debug!("query_params: {:?}", query_params);
     debug!("config.team_name: {}", config.team_name.to_string());
-    let url = format!("https://api.docbase.io/teams/{}/posts?q={}", config.team_name.to_string(), query_params);
+    let url = format!("https://api.docbase.io/teams/{}/posts?desc:created_at&per_page=100&q={}", config.team_name.to_string(), query_params);
     debug!("url: {:?}", url);
 
     url
