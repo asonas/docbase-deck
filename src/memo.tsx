@@ -207,26 +207,33 @@ export function Memo() {
     <ThemeProvider theme={theme}>
       <div className="flex mx-2">
         <div className="sticky top-1 w-/6 p-2 bg-gray-100 h-screen">
-          <div className="flex flex-wrap -mx-3 mb-6">
-            <div className="w-full md:w-3/5 px-1">
+          <div className="flex flex-wrap -mx-3 mb-3">
+            <div className="w-full md:w-5/5 px-1">
               <input
                 type="text"
                 placeholder="Add new tag"
                 value={newTagTitle}
                 onChange={(e) => setNewTagTitle(e.target.value)}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter' && newTagTitle.trim() !== '') {
+                    handleAddTagClick();
+                  }
+                }}
                 className="appearance-none block w-full bg-gray-200 text-gray-700 border border-red-500 rounded py-3 px-4 mb-3 leading-tight focus:outline-none focus:bg-white"
               />
             </div>
-            <div className="w-full md:w-2/5 px-1">
-              <button
-                onClick={handleAddTagClick}
-                className="mb-2 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-              >Add</button>
-            </div>
           </div>
-          <Section>
-            <SideNav items={navItems} onClick={selectTag} />
-          </Section>
+          {navItems.map((item, index) => (
+            <button
+              key={item.id}
+              onClick={() => handleSelectTag(item.id)}
+              className={`text-left w-full px-4 py-2 rounded-lg text-sm font-semibold ${
+                item.isSelected ? "bg-blue-500 text-white" : "text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              {item.title}
+            </button>
+          ))}
         </div>
         <div className="w-2/6 px-2 mt-3 duration-300 overflow-auto h-screen">
           {memos && memos.map((memo, index) => (
