@@ -1,7 +1,7 @@
 import "tailwindcss/tailwind.css";
 import { RecoilRoot } from "recoil";
 import { Settings } from "./settings";
-import { Memo } from "./memo";
+import { Memo } from "./Memo";
 
 export function App() {
   return (
