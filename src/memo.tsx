@@ -23,12 +23,36 @@ export const memosState = atom({
 });
 
 export function Memo() {
-  // const [memo, setMemo] = useRecoilState(memoState);
-  const [memos, setMemos] = useRecoilState(memosState);
   const [selectedTag, setSelectedTag] = useState('dev');
-  const [selectedIndex, setSelectedIndex] = useState(0);
-  const memoRefs = useRef([]);
 
+  const navItems = [
+    {
+      id: 'dev',
+      title: 'dev',
+      isSelected: selectedTag === 'dev',
+    },
+    {
+      id: 'nikki',
+      title: 'nikki',
+      isSelected: selectedTag === 'nikki',
+    },
+    {
+      id: 'frappe',
+      title: 'frappe',
+      isSelected: selectedTag === 'frappe',
+    },
+    {
+      id: 'チームトポロジー',
+      title: 'チームトポロジー',
+      isSelected: selectedTag === 'チームトポロジー',
+    },
+  ]
+
+  const [memos, setMemos] = useRecoilState(memosState);
+
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [selectedTagIndex, setSelectedTagIndex] = useState(navItems.findIndex(item => item.id === selectedTag));
+  const memoRefs = useRef([]);
 
   useEffect(() => {
     if (memos.length === 0) {
@@ -70,23 +94,43 @@ export function Memo() {
 
   useEffect(() => {
     const handleKeyPress = (event) => {
-      let newIndex;
-      switch (event.key) {
-        case 'k':
-          newIndex = Math.max(selectedIndex - 1, 0);
-          setSelectedIndex(newIndex);
-          scrollToMemo(newIndex);
-          break;
-        case 'j':
-          newIndex = Math.min(selectedIndex + 1, memos.length - 1);
-          setSelectedIndex(newIndex);
-          scrollToMemo(newIndex);
-          break;
-        case ';':
-          handleOpenLink();
-          break;
-        default:
-          break;
+      if (event.ctrlKey) {
+        let newTagIndex;
+        switch (event.key) {
+          case 'p':
+            event.preventDefault();
+            newTagIndex = Math.max(selectedTagIndex - 1, 0);
+            setSelectedTagIndex(newTagIndex);
+            setSelectedTag(navItems[newTagIndex].id);
+            setSelectedIndex(0);
+            break;
+          case 'n':
+            event.preventDefault();
+            newTagIndex = Math.min(selectedTagIndex + 1, navItems.length - 1);
+            setSelectedTagIndex(newTagIndex);
+            setSelectedTag(navItems[newTagIndex].id);
+            setSelectedIndex(0);
+            break;
+        }
+      } else {
+        let newIndex;
+        switch (event.key) {
+          case 'k':
+            newIndex = Math.max(selectedIndex - 1, 0);
+            setSelectedIndex(newIndex);
+            scrollToMemo(newIndex);
+            break;
+          case 'j':
+            newIndex = Math.min(selectedIndex + 1, memos.length - 1);
+            setSelectedIndex(newIndex);
+            scrollToMemo(newIndex);
+            break;
+          case ';':
+            handleOpenLink();
+            break;
+          default:
+            break;
+        }
       }
     };
 
@@ -107,35 +151,13 @@ export function Memo() {
     console.log(event.currentTarget.innerText);
     setSelectedTag(event.currentTarget.innerText);
   }
-  const navItems = [
-    {
-      id: 'nikki',
-      title: 'nikki',
-      isSelected: selectedTag === 'nikki',
-    },
-    {
-      id: 'frappe',
-      title: 'frappe',
-      isSelected: selectedTag === 'frappe',
-    },
-    {
-      id: 'dev',
-      title: 'dev',
-      isSelected: selectedTag === 'dev',
-    },
-    {
-      id: 'チームトポロジー',
-      title: 'チームトポロジー',
-      isSelected: selectedTag === 'チームトポロジー',
-    },
-  ]
 
   // UI
   const theme = createTheme();
 
   return (
     <ThemeProvider theme={theme}>
-      <div className="flex flex-wrap -mx-2">
+      <div className="flex mx-2">
         <div className="sticky top-1 w-1/4 p-2 bg-gray-100">
           <input type="text" className="mt-1 mb-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"></input>
           <Section>
