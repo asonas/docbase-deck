@@ -276,7 +276,7 @@ export function Memo() {
             </div>
           ))}
         </div>
-        <div className="w-3/6 p-2 bg-gray-50 h-screen">
+        <div className="w-3/6 p-2 bg-gray-50 h-screen overflow-auto">
           {memos.length > 0 && (
             <div className="p-4 mb-8 bg-white rounded-lg shadow-md">
               <h3 className="mb-2 text-xl font-semibold text-gray-800">{memos[selectedIndex].title}</h3>
