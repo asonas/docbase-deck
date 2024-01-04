@@ -1,5 +1,6 @@
 import { useRecoilState } from "recoil";
 import { useEffect, useRef } from "preact/hooks";
+import { RefObject } from "preact";
 import { invoke } from "@tauri-apps/api/tauri";
 import { atom } from "recoil";
 import { emit, once} from "@tauri-apps/api/event";
@@ -11,13 +12,20 @@ export const settingState = atom({
     team_name: "",
   },
 });
+type ModalProps = {
+  onClose: () => void;
+  onSettingChange: () => void;
+  apiKeyRef: RefObject<HTMLInputElement>;
+  teamNameRef: RefObject<HTMLInputElement>;
+};
+
 
 export const modalState = atom({
   key: "modalState",
   default: false,
 });
 
-function Modal({ onClose, onSettingChange, apiKeyRef, teamNameRef }) {
+function Modal({ onClose, onSettingChange, apiKeyRef, teamNameRef }: ModalProps) {
   return (
     <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-10" id="my-modal">
       <div className="relative top-1/4 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
@@ -79,8 +87,9 @@ export function Settings() {
       team_name: teamNameRef.current.value
     };
     invoke('call_docbase_api', { apiKey: nextSetting.api_key, teamName: nextSetting.team_name })
-      .then(response => {
-        if (response.status === 200) {
+      .then((response: any) => {
+        if ((response as { status?: number }).status === 200) { // Type assertion for 'response'
+
           setIsModalOpen(false);
         }
       });

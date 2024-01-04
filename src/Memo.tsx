@@ -3,7 +3,6 @@ import { readTextFile, writeFile } from '@tauri-apps/api/fs';
 import { appDataDir } from '@tauri-apps/api/path';
 import { open } from '@tauri-apps/api/shell';
 
-import { MouseEvent } from "react";
 import { atom, useRecoilState } from "recoil";
 import { useEffect, useState, useRef } from "preact/hooks";
 import DOMPurify from 'dompurify';
@@ -13,7 +12,7 @@ import { modalState } from "./settings";
 
 type Tag = {
   id: string;
-  title: string;
+  name: string;
   isSelected: boolean;
 };
 
@@ -52,10 +51,10 @@ export const memosState = atom<Memo[]>({
 
 export function Memo() {
   const initialTags = [
-    { id: 'dev', title: 'dev', isSelected: true },
-    { id: 'nikki', title: 'nikki', isSelected: false },
-    { id: 'frappe', title: 'frappe', isSelected: false },
-    { id: 'チームトポロジー', title: 'チームトポロジー', isSelected: false }
+    { id: 'dev', name: 'dev', isSelected: true },
+    { id: 'nikki', name: 'nikki', isSelected: false },
+    { id: 'frappe', name: 'frappe', isSelected: false },
+    { id: 'チームトポロジー', name: 'チームトポロジー', isSelected: false }
   ];
   const [selectedTag, setSelectedTag] = useState('dev');
   const [navItems, setNavItems] = useState<Tag[]>(initialTags);
@@ -65,10 +64,11 @@ export function Memo() {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [selectedTagIndex, setSelectedTagIndex] = useState(navItems.findIndex(item => item.id === selectedTag));
   const memoRefs = useRef<HTMLDivElement[]>([]);
-  const [isModalOpen, setIsModalOpen] = useRecoilState(modalState);
+  const [, setIsModalOpen] = useRecoilState(modalState);
+  const [selectedMemoHtml, setSelectedMemoHtml] = useState<string>('');
 
   const TAGS_FILE_NAME = 'tags.json';
-  const saveTagsToFile = async (tags) => {
+  const saveTagsToFile = async (tags: Tag[]) => {
     const path = await appDataDir();
     const fullPath = `${path}${TAGS_FILE_NAME}`;
     await writeFile({ path: fullPath, contents: JSON.stringify(tags) });
@@ -87,8 +87,8 @@ export function Memo() {
       const tagsJson = await readTextFile(fullPath);
       const tags = JSON.parse(tagsJson);
       setNavItems(tags);
-    } catch (error) {
-      if (error.code === 'NotFound') {
+    } catch (error: unknown) {
+      if (typeof error === "object" && error !== null && (error as {code?: string}).code === 'NotFound') {
         console.log('tags.json not found. Saving initial tags.');
         setNavItems(initialTags);
         saveTagsToFile(initialTags).catch((saveError) =>
@@ -106,9 +106,19 @@ export function Memo() {
     loadTagsFromFile();
   }, []);
 
-  const markdownToHtml = (markdown: string): string => {
+  useEffect(() => {
+    const generateHtml = async () => {
+      if (memos.length > 0) {
+        const html = await markdownToHtml(memos[selectedIndex].body);
+        setSelectedMemoHtml(html);
+      }
+    }
+    generateHtml();
+  }, [memos, selectedIndex]);
+
+  const markdownToHtml = async (markdown: string): Promise<string> => {
     if (!markdown) return '';
-    const rawMarkup = marked(markdown, { breaks: true });
+    const rawMarkup = await marked(markdown, { breaks: true });
     return DOMPurify.sanitize(rawMarkup);
   };
 
@@ -119,7 +129,7 @@ export function Memo() {
     }
   };
 
-  const handleSelectTag = (id) => {
+  const handleSelectTag = (id: string) => {
     setSelectedTag(id);
     setNavItems(navItems.map(item => ({
       ...item,
@@ -130,7 +140,7 @@ export function Memo() {
   const handleAddTag = async (newItemTitle: string) => {
     const newItem = {
       id: newItemTitle.toLowerCase(),
-      title: newItemTitle,
+      name: newItemTitle,
       isSelected: false
     };
     if (!navItems.some(item => item.id === newItem.id)) {
@@ -229,14 +239,11 @@ export function Memo() {
 
   const handleOpenLink = async () => {
     if (memos && memos.length > 0) {
-      await open(memos[selectedIndex].url);
+      const url = memos[selectedIndex].url;
+      if (!url) return;
+      await open(url);
     }
   };
-
-  const selectTag = (event: MouseEvent<HTMLButtonElement>): void => {
-    console.log(event.currentTarget.innerText);
-    setSelectedTag(event.currentTarget.innerText);
-  }
 
   return (
     <div>
@@ -266,7 +273,7 @@ export function Memo() {
                 item.isSelected ? "bg-blue-500 text-white" : "text-gray-700 hover:bg-gray-200"
               }`}
             >
-              {item.title}
+              {item.name}
             </button>
           ))}
           <button onClick={openSettingsModal}>Settings</button>
@@ -279,7 +286,9 @@ export function Memo() {
           )}
           {!isLoading && memos && memos.map((memo, index) => (
             <div key={index}
-                 ref={(el) => memoRefs.current[index] = el}
+              ref={(el) => {
+                if (el) memoRefs.current[index] = el;
+              }}
                  className={`p-4 mb-8 bg-white rounded-lg shadow-md border-4 ${index === selectedIndex ? 'border-blue-500' : 'border-transparent'}`} // 選択されているメモに枠線色を設定
                  onClick={() => {
                    setSelectedIndex(index);
@@ -328,11 +337,10 @@ export function Memo() {
                 <div className="text-sm font-semibold">{memos[selectedIndex].user.name}</div>
               </div>
               <div className="prose mt-4 text-gray-800 text-sm"
-                dangerouslySetInnerHTML={{ __html: markdownToHtml(memos[selectedIndex].body) }}>
+                dangerouslySetInnerHTML={{ __html: selectedMemoHtml }}>
               </div>
             </div>
           )}
-
         </div>
       </div>
     </div>
