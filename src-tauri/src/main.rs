@@ -1,9 +1,8 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use tauri::Manager;
-mod config;
 mod docbase;
-use config::Settings;
+mod settings;
 use serde::{Deserialize, Serialize};
 use serde_json::{Result, Value, json};
 use tokio::runtime::Handle;
@@ -15,7 +14,6 @@ struct DocbaseApiArgs {
   api_key: String,
   team_name: String,
 }
-
 
 #[tauri::command]
 async fn call_docbase_api(args: DocbaseApiArgs) -> std::result::Result<String, String> {
@@ -67,7 +65,7 @@ fn main() {
             let (tx, rx) = std::sync::mpsc::channel();
             std::thread::spawn(move || {
               handle.block_on(async {
-                let config = config::get().unwrap();
+                let config = settings::Secure::get().unwrap();
                 match docbase::handle_docbase_request(v.to_string(), config).await {
                   Ok(resp) => {
                     let resp = serde_json::to_string(&resp).expect("JSON serialization error");
@@ -79,9 +77,14 @@ fn main() {
                 }
               });
             });
-            let recv = rx.recv().unwrap();
-            let _ = window_1.emit("find-memo-callback", &recv);
-
+            match rx.recv() {
+              Ok(recv) => {
+                let _ = window_1.emit("find-memo-callback", &recv);
+              },
+              Err(e) => {
+                debug!("Error: {:?}", e);
+              }
+            }
           }
         }
         None => todo!(),
@@ -89,18 +92,30 @@ fn main() {
 
       let window_2 = window.clone();
       window.listen("get-setting", move |_| {
-        let conf = config::get().unwrap();
-        let _ = window_2.emit(
-          "get-setting-callback",
-          serde_json::to_string(&conf).unwrap(),
-        );
+        match settings::Secure::get() {
+          Ok(settings) => {
+            let _ = window_2.emit(
+              "get-setting-callback",
+              serde_json::to_string(&settings).unwrap(),
+            );
+          }
+          Err(e) => {
+            info!("Error: {:?}", e);
+          }
+        }
       });
       window.listen("set-setting", move |event| match &event.payload() {
         Some(s) => {
           info!("set-setting");
-          let settings: Settings = serde_json::from_str(&s).unwrap();
-          info!("settings: {:?}", settings.api_key);
-          config::store(settings);
+          match serde_json::from_str::<settings::Secure>(&s) {
+            Ok(settings) => {
+              info!("settings: {:?}", settings.api_key);
+              settings.store();
+            }
+            Err(e) => {
+              info!("Error: {:?}", e);
+            }
+          }
         }
         None => todo!(),
       });

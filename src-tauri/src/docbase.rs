@@ -3,7 +3,7 @@ use reqwest::header::{HeaderMap, HeaderValue, CONTENT_TYPE};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use log::debug;
-use crate::config::Settings;
+use crate::settings;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct DocBaseRequest {
@@ -42,7 +42,7 @@ pub struct ApiResponse {
     posts: Vec<DocBaseResponse>,
 }
 
-fn build_docbase_search_url(request: DocBaseRequest, config: Settings) -> String {
+fn build_docbase_search_url(request: DocBaseRequest, config: settings::Secure) -> String {
     let mut query_params = request.tags.into_iter()
         .map(|tag| format!("tag:{}", tag.name))
         .collect::<Vec<String>>()
@@ -56,7 +56,7 @@ fn build_docbase_search_url(request: DocBaseRequest, config: Settings) -> String
     url
 }
 
-pub async fn handle_docbase_request(message_json: String, config: Settings) -> Result<Vec<DocBaseResponse>, Box<dyn std::error::Error>> {
+pub async fn handle_docbase_request(message_json: String, config: settings::Secure) -> Result<Vec<DocBaseResponse>, Box<dyn std::error::Error>> {
     let mut headers = HeaderMap::new();
     headers.insert(
         "X-DocBaseToken",
